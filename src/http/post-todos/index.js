@@ -12,7 +12,7 @@ exports.handler = async function post (req) {
       'cache-control': 'no-cache, no-store, must-revalidate, max-age=0, s-maxage=0',
        "Access-Control-Allow-Origin":"*",
        "Access-Control-Allow-Headers": "X-Requested-With",
-       "Access-Control-Allow-Methods":"PUT,POST,GET,DELETE,OPTIONS"
+       "Access-Control-Allow-Methods":"PUT,POST,GET,DELETE,OPTIONS",
        "X-Powered-By":' 3.2.1'
     },
     body: JSON.stringify(result)
