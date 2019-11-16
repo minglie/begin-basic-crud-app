@@ -2,9 +2,9 @@ let arc = require('@architect/functions')
 
 
 exports.handler = async function post (req) {
-  let todo = arc.http.helpers.bodyParser(req) // Base64 decodes + parses body
+  let req.params = arc.http.helpers.bodyParser(req) // Base64 decodes + parses body
  
-  console.log(todo)
+  console.log(req.params.text)
   
    return {
     statusCode: 201,
