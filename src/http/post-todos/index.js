@@ -2,7 +2,7 @@ let arc = require('@architect/functions')
 
 
 exports.handler = async function post (req) {
-  let req.params = arc.http.helpers.bodyParser(req) // Base64 decodes + parses body
+   req.params = arc.http.helpers.bodyParser(req) // Base64 decodes + parses body
  
   console.log(req.params.text)
   
