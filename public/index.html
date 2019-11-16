@@ -1,570 +1,343 @@
-<!DOCTYPE html>
-<html lang="en">
+<!doctype html>
+<html>
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width">
-  <meta name="theme-color" content="#132865">
-  <meta name="msapplication-TileColor" content="#132865">
-  <title>Todos</title>
-  <style>
-    :root {
-      --grey: #D8D8D8;
-      --royal: #132865;
-    }
-    * {
-      margin: 0;
-      padding: 0;
-    }
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, sans-serif;
-    }
-    .focus-outline-0:focus {
-      outline: 0;
-    }
-    .focus-border:focus {
-      border: 1px solid rgba(0, 0, 0, 0.25);
-      border-radius: 2px;
-    }
-    .width-100 {
-      width: 100%;
-    }
-    html,
-    .height-100 {
-      height: 100%;
-    }
-    .height-100vh {
-      height: 100vh;
-    }
-    .min-width-0 {
-      min-width: 0;
-    }
-    .max-width-100 {
-      max-width: 100%;
-    }
-    .margin-top-60vw {
-      margin-top: 60vw;
-    }
-    .margin-bottom-16 {
-      margin-bottom: 1rem;
-    }
-    .margin-bottom-32 {
-      margin-bottom: 2rem;
-    }
-    .margin-bottom-64 {
-      margin-bottom: 4rem;
-    }
-    .padding-1 {
-      padding: 1rem;
-    }
-    .padding-top-8 {
-      padding-top: 0.5rem;
-    }
-    .padding-right-24 {
-      padding-right: 1.5rem;
-    }
-    .padding-bottom-8 {
-      padding-bottom: 0.5rem;
-    }
-    .padding-bottom-16 {
-      padding-bottom: 1rem;
-    }
-    .padding-bottom-64 {
-      padding-bottom: 4rem;
-    }
-    .padding-left-24 {
-      padding-left: 1.5rem;
-    }
-    .top-0 {
-      top: 0;
-    }
-    .top-16 {
-      top: 1rem;
-    }
-    .left-16 {
-      left: 1rem;
-    }
-    .list-style-none {
-      list-style: none;
-    }
-    .position-absolute {
-      position: absolute;
-    }
-    .position-sticky {
-      position: sticky;
-    }
-    .border-transparent {
-      border: 1px solid transparent;
-    }
-    .border-radius-pill {
-      border-radius:9999px;
-    }
-    .display-flex {
-      display: flex;
-    }
-    .display-inline-flex {
-      display: inline-flex;
-    }
-    .flex-grow-1 {
-      flex-grow: 1;
-    }
-    .align-items-center {
-      align-items: center;
-    }
-    .margin-auto {
-      margin: 0 auto;
-    }
-    .margin-right-1 {
-      margin-right: 1rem;
-    }
-    .padding-top-80 {
-      padding-top: 5rem;
-    }
-    .font-size-1 {
-      font-size: 1.5rem;
-    }
-    .font-size-3 {
-      font-size: 3rem;
-    }
-    .font-weight-normal {
-      font-weight: 300;
-    }
-    .line-height-64 {
-      line-height: 4rem;
-    }
-    .text-align-center {
-      text-align: center;
-    }
-    .border-none {
-      border: 0;
-    }
-    .border-bottom {
-      border-bottom: 1px solid #D8D8D8;
-    }
-    .color-royal {
-      color: var(--royal);
-    }
-    .color-grey {
-      color: var(--grey);
-    }
-    .background-grey {
-      background-color: var(--grey);
-    }
-    .background-royal {
-      background-color: var(--royal);
-    }
-    .fill-royal {
-      fill: var(--royal);
-    }
-    .cursor-pointer {
-      cursor: pointer;
-    }
-    .height-1 {
-      height: 1px;
-    }
-    .background,
-    .background-image {
-      background-image: url('/_static/background.jpg');
-    }
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <title>index</title>
+    <link rel="stylesheet" type="text/css" href="https://minglie.github.io/public/easyui/css/easyui.css">
+    <link rel="stylesheet" type="text/css" href="https://minglie.github.io/public/easyui/css/icon.css">
+    <script src="https://minglie.github.io/public/easyui/js/jquery.min.js"></script>
+    <script src="./start_m_mock.js"></script>
+    <script type="text/javascript" src="https://minglie.github.io/public/easyui/js/jquery.easyui.min.js"></script>
+    <script>
+        /**
+         *后台服务开始
+         */
+        M.host = "";
+        M.tableInfo = [];
+        M.currentTableName = "";
+        tableList = {};
+        M.doSql(`select sql createSql from sqlite_master where type='table'`, (d) => {
+            for (let i = 0; i < d.data.length; i++) {
+                let str = d.data[i].createSql;
+                let tableName = /CREATE TABLE (\w*)/.exec(str)[1];
+                tableList[tableName] = [];
+                str = str.substring(str.indexOf("(")).replace("(", "");
+                str = str.substring(0, str.lastIndexOf(")")).split(",");
+                str.map(d => {
+                    d = d.trim().split(" ")[0];
+                    if (d != "PRIMARY") {
+                        tableList[tableName].push(d);
+                    }
+                })
+            }
+            // console.log(tableList)
+        });
+        app.post("/listByPage", function (req, res) {
+            if (!M.currentTableName) {
+                res.send([]);
+                return;
+            }
+            const sql1 = `
+        select * from ${M.currentTableName}  limit ${(req.params.page - 1) * req.params.rows},${req.params.rows};
+        `;
+            const sql2 = ` select count(1) c from ${M.currentTableName};`;
+            M.doSql(sql1, (d) => {
+                rows = d.data;
+                M.doSql(sql2, (d) => {
+                    total = d.data[0].c;
+                    res.send({rows, total});
+                });
+            })
+        });
+        app.post("/listAllTableName", function (req, res) {
+            const sql = `select name createSql from sqlite_master where type='table';`;
+            M.doSql(sql, (d) => {
+                rows = d.data.map(u => {
+                    let o = {};
+                    o.tableName = Object.values(u)[0];
+                    return o;
+                });
+                res.send({rows});
+            })
+        });
+        app.get("/delete", function (req, res) {
+            ids = "(" + req.params.ids.toString() + ")";
+            let sql = `delete from ${M.currentTableName} where id in ${ids};`;
+            M.doSql(sql, (d) => {
+                r = d.data[0];
+                res.send(r);
+            })
+        });
+        app.post("/add", function (req, res) {
+            let o = {}
+            req.params.date.forEach((d) => {
+                o[d.name] = d.value
+            })
+            delete o.id;
+            let sql = M.Db().getInsertObjSql(M.currentTableName, o);
+            M.doSql(sql, (d) => {
+                res.send(d);
+            })
+        });
+        app.post("/createTable", function (req, res) {
+            let columArr=req.params.value.split(":")
+            if(columArr.length<2){
+                alert("格式不合法");
+                return;
+            }else if(Object.keys(tableList).indexOf(columArr[0])>=0){
+                alert(columArr[0]+"表已存在");
+                res.send("ok");
+                return;
+            }
+            let tableName=columArr[0];
+            columArr=columArr[1].split(",")
+            let sql="CREATE TABLE "+ tableName +"(id INTEGER NOT NULL,"+ columArr.map(d=>{return d.trim() +" varchar (200) DEFAULT NULL,"}).join("")+" PRIMARY KEY (id))";
 
-    .background,
-    .background-repeat {
-      background-repeat: no-repeat;
-    }
+            M.doSql(sql, (d) => {
+                res.send(d);
+            })
+        });
+        app.post("/update", function (req, res) {
+            let o = {}
+            req.params.date.forEach((d) => {
+                o[d.name] = d.value
+            })
+            sql = M.Db().getUpdateObjSql(M.currentTableName, o, {id: o.id}) + ";";
+            M.doSql(sql, (d) => {
+                console.log(d)
+                res.send(d);
+            })
+        });
+        /**
+         *  前台js开始
+         */
+        (function () {
+            function init() {
+                var myColumns = [];
+                myColumns[0] = M.tableInfo.map(function (u) {
+                    let obj = {};
+                    obj.field = u;
+                    obj.title = u;
+                    return obj;
+                });
+                myColumns[0] = [{checkbox: true}, ... myColumns[0]];
+                $('#resourceDataGrid').datagrid({
+                    url: "/listByPage",
+                    width: 10000,
+                    rownumbers: true,//使能行号列
+                    pagination: true,//显示分页工具栏
+                    pageSize: 20,//在设置分页属性的时候初始化页面大小。
+                    pageList: [20, 30, 40, 50],//在设置分页属性的时候 初始化页面大小选择列表。
+                    rowStyler: function (rowIndex, rowData) {
+                        if (rowData.id % 2 == 0) {
+                            return "background-color:pink";
+                        }
+                    },
+                    columns: myColumns
+                });
+            }
+//页面初始化
+            $(function () {
+                init();//初始化DataGrid
+                $('#leftMeau').datagrid({
+                    url: "/listAllTableName",
+//pagination:true,//显示分页工具栏
+                    singleSelect: true,
+                    columns: [[
+                        {checkbox: false},
+                        {field: 'tableName', title: '表名', width: 200}
+                    ]],
+                    onClickRow: function (index, row) {
+                        var row = $('#leftMeau').datagrid("getSelections");
+                        M.currentTableName = row[0].tableName;
+                        M.tableInfo = tableList[M.currentTableName];
+                        init();
+                    }
+                });
+                /*添加按钮*/
+                $("#resourceDataGridToolButton [name='add']").click(
+                    () => {
+                        if (!M.currentTableName) {
+                            // 创建表
+                            $("#addDialog").dialog({
+                                title: '创建表',
+                                closable: true,
+                                width: 600,
+                                content: `
+                                        <form id="addForm" method="post">
+                                         <input name="colum" placeholder="resouce:name,age,hubby" style="width:500px"/>
+                                        </form>
+                                    `,
+                                buttons: [{
+                                    text: '确定',
+                                    iconCls: 'icon-ok',
+                                    handler: function () {
+                                        M.IO.createTable(
+                                            $("#addForm").serializeArray()[0]
+                                        )
+                                        location.reload();
+                                    }
+                                }
+                                ],
+                            });
+                            return;
+                        }
+                        let addDialogContent = tableList[M.currentTableName].map(d => {
+                            return `${d}  <input name="${d}"> <br/>`
+                        }).join("");
+                        // 创建填写审批意见对话框
+                        $("#addDialog").dialog({
+                            title: '添加数据',
+                            closable: true,
+                            width: 600,
+                            height: 500,
+                            content: `
+                                <form id="addForm" method="post">
+                                  ${addDialogContent}
+                                </form>
+                            `,
+                            buttons: [{
+                                text: '确定',
+                                iconCls: 'icon-ok',
+                                handler: function () {
+                                    M.IO.add(
+                                        {date: $("#addForm").serializeArray()}
+                                    )
+                                    $('#resourceDataGrid').datagrid('reload');// 重新载入数据
+                                    $('#addDialog').dialog("close");//关闭添加对话框
+                                }
+                            }
+                            ],
+                        });
+                    }
+                );
 
-    .background,
-    .background-size-contain {
-      background-size: contain;
-    }
+                $("#resourceDataGridToolButton [name='update']").click(
+                    () => {
+                        if (!M.currentTableName) {
+                            alert("请选择表")
+                            return;
+                        }
+                        row = $('#resourceDataGrid').datagrid("getSelections");
+                        if (row.length == 1) {
+                            console.log("AAA", row[0])
+                        } else {
+                            $.messager.alert('我的消息', '请选择一行进行修改！', 'info');
+                            return;
+                        }
+                        let updateDialogContent = "";
+                        for (let field in row[0]) {
 
-    .background,
-    .background-positon {
-      background-position: top right;
-    }
+                            console.log(row[0][field],"VVVVVVV")
 
-    .background-white {
-      background-color: white;
-    }
-    html,
-    .overflow-hidden {
-      overflow: hidden;
-    }
-    .overflow-x-hidden {
-      overflow-x: hidden;
-    }
-    .overflow-y-scroll {
-      overflow-y: scroll;
-      -webkit-overflow-scrolling: touch;
-    }
-    .overflow-y-hidden {
-      overflow-y: hidden;
-    }
-    .max-width-192 {
-      max-width: 12rem;
-    }
-    .display-none {
-      display: none;
-    }
-    .min-height-100vh {
-      min-height: 100vh;
-    }
-    .width-16 {
-      width: 1rem;
-    }
-    .height-16 {
-      height: 1rem;
-    }
+                            updateDialogContent += `${field} <textarea rows="1" name="${field}">${row[0][field]}</textarea> <br/>`
+                        }
+                        $("#updateDialog").dialog({
+                            title: '修改数据',
+                            closable: true,
+                            width: 600,
+                            height: 500,
+                            content: `
+                                <form id="updateForm" method="post">
+                                  ${updateDialogContent}
+                                </form>
+                            `,
+                            buttons: [{
+                                text: '确定',
+                                iconCls: 'icon-ok',
+                                handler: function () {
+                                    M.IO.update(
+                                        {date: $("#updateForm").serializeArray()}
+                                    )
+                                    $('#resourceDataGrid').datagrid('reload');// 重新载入数据
+                                    $('#updateDialog').dialog("close");//关闭对话框
+                                }
+                            }
+                            ],
+                        });
+                    }
+                );
+                /*导出mysql脚本*/
+                $("#resourceDataGridToolButton [name='downDate']").click(function() {
+                    let downDateTxt=`/*${new Date()}*/\n\n`;
+                    M.doSql(`select sql  from sqlite_master where tbl_name="${M.currentTableName}"`,(d)=>{
+                        let createTableSql=d.data[0].sql;
+                        let idIndex=createTableSql.indexOf(",");
+                        createTableSql=  createTableSql.slice(0,idIndex)+' AUTO_INCREMENT'+createTableSql.slice(idIndex)
+                        downDateTxt+="\n"+createTableSql+";\n\n\n";
+                        M.doSql(`select *  from  ${M.currentTableName}`,(d1)=>{
+                            d1.data.map(d=>{
+                                downDateTxt+=M.Db().getInsertObjSql(M.currentTableName,d)+";\n";
+                            })
+                            M.fileDownload(downDateTxt,M.currentTableName+".sql");
+                        })
+                    })
+                });
+                //DataGrid删除按钮
+                $("#resourceDataGridToolButton [name='remove']").click(function () {
+                    var row = $('#resourceDataGrid').datagrid("getSelections");
+                    if (row.length == 0) {
+                        if(M.currentTableName){
+                            M.doSql(`drop table ${M.currentTableName}`);
+                            location.reload();
+                        }else{
+                            $.messager.alert('我的消息', '请先选择删除！', 'info');
+                        }
+                    } else {
+                        $.messager.confirm('温馨提示', '确认删除选择的内容？', function (r) {
+                            if (r) {
+                                let ids = row.map(u => u.id);
+                                M.IO.delete({ids});
+                                $('#resourceDataGrid').datagrid('reload');// 重新载入数据
+                            }
+                        });
+                    }
+                });
+                //清空按钮
+                $("#resourceDataGridToolButton [name='removeAll']").click(function () {
+                    M.doSql(`delete from ${M.currentTableName};`, (d) => {
+                        location.reload()
+                    })
+                });
 
-@media screen and (min-width: 40em) {
-  .max-width-tablet {
-    max-width: 30rem;
-  }
-  .margin-top-0-tablet {
-    margin-top: 0;
-  }
-  .margin-left-auto-tablet {
-    margin-left: auto;
-  }
-  .background,
-  .background-positon-tablet {
-    background-position: center right;
-  }
-  .padding-top-128-tablet {
-    padding-top: 8rem;
-  }
-  .padding-right-72-tablet {
-    padding-right: 4.5rem;
-  }
-  .padding-left-72-tablet {
-    padding-left: 4.5rem;
-  }
-  .font-size-4-tablet {
-    font-size: 4rem;
-  }
-  .background,
-  .background-size-cover-tablet {
-    background-size: cover;
-  }
+                $("#runSqlBtn").click(function () {
+                    M.doSql(text_input.value, (d) => {
+                        text_output.value=JSON.stringify(d.data)
+                    })
+                });
+            })
+        })();
+    </script>
 
-}
 
-  </style>
 </head>
-<body
-  class="
-    height-100
-    background
-    overflow-y-scroll
-    overflow-x-hidden
-  "
->
-<svg
-  xmlns="http://www.w3.org/2000/svg"
-  xmlns:xlink="http://www.w3.org/1999/xlink"
-  width="0"
-  height="0"
-  style="display:none;"
->
-  <symbol id="icon-save" viewBox="0 0 24 24">
-    <path d="m21.686 4.836-2.521-2.521c-.095-.095-.223-.148-.357-.148h-2.017-9.582-3.53c-.834 0-1.513.679-1.513 1.513v16.641c0 .834.679 1.513 1.513 1.513h2.521 11.598 2.521c.834 0 1.513-.679 1.513-1.513v-15.129c.001-.133-.052-.262-.146-.356zm-7.921-1.661h2.521v4.538c0 .278-.226.504-.504.504h-2.017zm-6.051 0h5.043v5.043h-4.539c-.278 0-.504-.226-.504-.504zm9.581 17.65h-10.59v-6.051h10.59zm3.53-.504c0 .278-.226.504-.504.504h-2.017v-6.556c0-.278-.226-.504-.504-.504h-11.599c-.278 0-.504.226-.504.504v6.556h-2.018c-.278 0-.504-.226-.504-.504v-16.642c0-.278.226-.504.504-.504h3.026v4.538c0 .834.679 1.513 1.513 1.513h7.564c.834 0 1.513-.679 1.513-1.513v-4.538h1.304l2.226 2.226z"/>
-  </symbol>
-  <symbol id="icon-trash" viewBox="0 0 32 32 ">
-    <path d="m27.7 7.3c-.5-1.6-1.3-2.5-2.3-2.5h-4.8c-.2-1.9-1.4-3.3-2.9-3.3h-3.4c-1.5 0-2.8 1.5-2.9 3.3h-4.9c-1 0-1.8.9-2.3 2.5-.1.5 0 1 .3 1.4.3.3.6.5 1 .5h1l.6 18c.2 3.2 3.1 3.2 4.6 3.2h8.9c1.5 0 4.4 0 4.6-3.3l.3-18h.9c.4 0 .8-.2 1-.5.4-.3.5-.8.3-1.3zm-13.4-4.8h3.4c1 0 1.8 1 2 2.3h-7.3c.1-1.3.9-2.3 1.9-2.3zm9.9 24.7c-.1 1.9-1.3 2.3-3.6 2.3h-8.9c-2.3 0-3.5-.4-3.6-2.3l-.6-17.9h17zm2.5-19.1c0 .1-.1.1-.2.1h-20.9c-.1 0-.2-.1-.2-.1-.2-.1-.2-.3-.2-.5.3-1.1.8-1.8 1.3-1.8h18.9c.5 0 1 .7 1.3 1.8.1.2.1.4 0 .5z"/><path d="m15.5 12.1h1v13.7h-1z"/><path d="m11.3 13.9h1v10h-1z"/><path d="m19.7 13.9h1v10h-1z"/>
-  </symbol>
-</svg>
-  <div
-    class="
-      min-height-100vh
-      max-width-tablet
-      margin-top-60vw
-      margin-top-0-tablet
-      margin-left-auto-tablet
-      padding-right-24
-      padding-left-24
-      padding-right-72-tablet
-      padding-left-72-tablet
-      padding-bottom-16
-      background-white
-    "
-  >
-    <div
-      class="
-        position-sticky
-        top-0
-        margin-bottom-64
-        padding-top-80
-        padding-top-128-tablet
-      "
-    >
-      <div
-        class="
-          display-flex
-          align-items-center
-        "
-      >
-        <h1
-          class="
-            color-grey
-            font-size-3
-            font-size-4-tablet
-          "
-        >
-          Todos
-        </h1>
-      </div>
-      <form
-        action="/todos"
-        method="POST"
-        class="
-          display-flex
-          align-items-center
-          background-white
-        "
-      >
-        <h2
-          class="
-            margin-right-1
-            font-weight-normal
-            color-grey
-          "
-        >
-          +
-        </h2>
-        <input
-          name="text"
-          type="text"
-          autofocus="autofocus"
-          class="
-            flex-grow-1
-            font-size-1
-            color-royal
-            border-none
-            line-height-64
-            focus-outline-0
-          "
-        />
-      </form>
-      <hr class="height-1 background-grey border-none"/>
+<body class="easyui-layout">
+<!-- 左边的树状菜单 -->
+<div data-options="region:'west',title:'菜单'"  style="width:200px;">
+    <table id="leftMeau"
+           data-options="singleSelect:true,collapsible:true,url:'datagrid_data1.json',fitColumns:'true'"></table>
+</div>
+<!-- 中间的数据展示 -->
+<div id="center" data-options="region:'center',title:'数据展示'">
+    <!-- 资源管理按钮 -->
+    <div id="resourceDataGridToolButton">
+        <a name="add" href="javascript:void(0)" class="easyui-linkbutton" data-options="iconCls:'icon-add'">添加</a>
+        <a name="update" href="javascript:void(0)" class="easyui-linkbutton" data-options="iconCls:'icon-edit'">更改</a>
+        <a name="remove" href="javascript:void(0)" class="easyui-linkbutton" data-options="iconCls:'icon-remove'">删除</a>
+        <a name="removeAll" href="javascript:void(0)" class="easyui-linkbutton" data-options="iconCls:'icon-remove'">清空</a>
+        <a name="downDate" href="javascript:void(0)" class="easyui-linkbutton" data-options="iconCls:'icon-remove'">导出SQl脚本</a>
     </div>
-    <div
-      id="js-message"
-      class="
-        max-width-192
-        margin-auto
-        text-align-center
-        color-grey
-      "
-    >
-    </div>
-    <ul
-      class="margin-bottom-32 list-style-none"
-      id="js-todos"
-    >
-    </ul>
-    <h2
-      id="js-done-title"
-      class="
-        margin-bottom-16
-        color-grey
-        display-none
-      "
-    >
-      Done
-    </h2>
-    <ul
-      class="list-style-none"
-      id="js-completed"
-    >
-    </ul>
-  </div>
-  <div
-    class="
-      position-absolute
-      top-16
-      left-16
-      display-flex
-      align-items-center
-      background-royal
-      border-radius-pill
-      cursor-pointer
-    "
-  >
-    <a
-      class="
-        display-inline-flex
-        padding-top-8
-        padding-right-24
-        padding-bottom-8
-        padding-left-24
-      "
-      href="https://begin.com"
-      target="_blank"
-    >
-      <img src="/_static/begin-lockup.svg" alt="Begin logo">
-    </a>
-  </div>
-  <script>
-    (function () {
-      // Kick off the app
-      init()
-
-      // GET all todos
-      function init () {
-        fetch('/todos', {
-          credentials: 'same-origin',
-          headers: {
-            'Content-Type': 'application/json'
-          }
-        })
-        .then(res => res)
-        .then(body => body.json())
-        // Call update with fetched todos
-        .then(json => update(json.todos))
-      }
-
-      // Update the DOM with data
-      function update (todos) {
-        let list = document.getElementById('js-todos')
-        let completed = document.getElementById('js-completed')
-        let message = document.getElementById('js-message')
-        let current = todos.filter(t => !t.completed)
-        let complete = todos.filter(t => t.completed)
-        let doneTitle = document.getElementById('js-done-title')
-        let done = complete.length && !current.length
-        let none = !complete.length && !current.length
-        if (none) {
-          message.innerHTML = Message({
-            src: '/_static/rocket.svg',
-            text: 'Let\'s get started!',
-            alt: 'Rocket'
-          })
-        } else if (done) {
-          message.innerHTML = Message({
-            src: '/_static/astronaut.svg',
-            text: 'You did it!',
-            alt: 'Astronaut'
-          })
-        }
-
-        if (complete.length) {
-          doneTitle.classList.toggle('display-none')
-        }
-
-        list && current.length
-          ? list.innerHTML = current.map(t => Todo(t)).join('')
-          : ''
-
-        completed && complete.length
-          ? completed.innerHTML = complete.map(t => Todo(t)).join('')
-          : ''
-      }
-
-      function Message (props) {
-        props = props || {}
-        let src = props.src || ''
-        let text = props.text || ''
-
-        return `
-<img class="max-width-100" src="${src}" alt=""/>
-<h3 class="font-size-1 font-weight-normal">${text}</h3>
-        `
-      }
-
-      function Todo (props) {
-        let text = props.text || ''
-        let id = props.key || ''
-        let created = props.created
-        let checked = props.completed
-          ? 'checked="checked"'
-          : ''
-
-        return `
-<li
-  id="${id}"
-  class="
-    display-flex
-    align-items-center
-    border-bottom
-  "
->
-  <form
-    action="/todos"
-    method="POST"
-    class="
-      min-width-0
-      display-flex
-      align-items-center
-      flex-grow-1
-    "
-  >
-    <input
-      type="checkbox"
-      name="completed"
-      class="
-        width-16
-        margin-right-1
-        cursor-pointer
-      "
-      ${checked}
-    />
-    <input
-      type="text"
-      name="text"
-      value="${text}"
-      class="
-        min-width-0
-        flex-grow-1
-        border-none
-        line-height-64
-        color-royal
-        font-weight-normal
-        font-size-1
-        focus-outline-0
-      "
-    />
-    <input type="hidden" name="key" value="${id}"/>
-    <input type="hidden" name="created" value="${created}"/>
-    <button
-      class="
-        padding-1
-        font-size-1
-        background-white
-        border-transparent
-        cursor-pointer
-        focus-border
-        focus-outline-0
-      "
-    >
-
-      <svg class="width-16 height-16 fill-royal">
-        <use href="#icon-save"></use>
-      </svg>
-    </button>
-  </form>
-  <form
-    action="/todos/delete"
-    method="POST"
-  >
-    <input type="hidden" name="key" value="${id}" />
-    <button
-      class="
-        padding-1
-        font-size-1
-        background-white
-        border-transparent
-        cursor-pointer
-        focus-border
-        focus-outline-0
-      "
-    >
-      <svg class="width-16 height-16 fill-royal">
-        <use href="#icon-trash"></use>
-      </svg>
-    </button>
-  </form>
-</li>
-        `
-      }
-    }())
-  </script>
+    <table id="resourceDataGrid" width="100%"></table>
+    <div id="addDialog" style="padding:3px"></div>
+    <div id="updateDialog" style="padding:3px"></div>
+</div>
+<div data-options="region:'south',title:'执行sql脚本',collapsed:true,expandMode:'float'"  style="width:200px;">
+    <h2>输入区</h2>
+    <textarea id="text_input" rows="10" cols="50">select sql createSql from sqlite_master where type='table'</textarea>
+    <input type="button" id="runSqlBtn" value="执行SQL" style="background:green;color:red;">
+    <textarea id="text_output" rows="15" cols="180"></textarea>
+</div>
 </body>
 </html>
