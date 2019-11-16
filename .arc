@@ -4,7 +4,6 @@ meadow-3z9
 @static
 
 @http
-get /todos
 post /todos
 post /todos/delete
 
