@@ -3,6 +3,7 @@
   "dependencies": {
     "@architect/functions": "latest",
     "@begin/data": "latest",
-    "nanoid": "^2.1.6"
+    "nanoid": "^2.1.6",
+    "sqlite3": "4.0.8"
   }
 }
