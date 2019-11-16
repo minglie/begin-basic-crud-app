@@ -5,7 +5,6 @@ meadow-3z9
 
 @http
 post /todos
-post /todos/delete
 
 @tables
 data
